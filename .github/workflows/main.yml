@@ -12,7 +12,7 @@ jobs:
       - name: 安装依赖
         run: pip install pyinstaller flask flask-sqlalchemy flask-login captcha geoip2
       - name: PyInstaller打包
-        run: pyinstaller -F -c syup_clean.py
+        run: pyinstaller -F -c --noupx --disable-windowed-traceback syup_clean.py
       - name: 上传生成的exe
         uses: actions/upload-artifact@v4
         with:
