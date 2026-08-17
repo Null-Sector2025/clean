@@ -1,6 +1,6 @@
-name: Build Standard Android SO (NDK r24)
+name: Build libstrong_core Android SO (NDK r24)
 
-# 触发规则：仅 C、头文件、编译配置、工作流本身改动才执行；修改py文件完全跳过CI
+# 触发策略：仅C源码/配置变更才运行，单独修改所有.py文件直接忽略工作流
 on:
   push:
     branches: [ main ]
@@ -8,7 +8,6 @@ on:
       - '**.c'
       - '**.h'
       - 'Makefile'
-      - 'CMakeLists.txt'
       - '.github/workflows/build_so.yml'
   pull_request:
     branches: [ main ]
@@ -16,36 +15,29 @@ on:
       - '**.c'
       - '**.h'
       - 'Makefile'
-      - 'CMakeLists.txt'
       - '.github/workflows/build_so.yml'
 
 jobs:
-  compile_arm64_so:
+  build_arm64_v8a:
     runs-on: ubuntu-latest
     steps:
-      # 拉取仓库全部源码
-      - name: Checkout repository code
+      - name: 拉取仓库源码
         uses: actions/checkout@v4
 
-      # 配置 Android NDK r24 (稳定版本，适配 Android API24)
-      - name: Setup Android NDK r24
+      - name: 安装Android NDK r24 稳定版
         uses: android-actions/setup-ndk@v1
         with:
           ndk-version: r24
 
-      # 编译参数定义
-      - name: Compile libstrong_core.so (arm64-v8a)
+      - name: 使用NDK官方clang编译标准安卓so
         run: |
-          # 编译器路径
-          CLANG=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
-          # 编译生成标准Android共享库
-          $CLANG -shared -fPIC -s -ldl -Wall strong_core.c -o libstrong_core.so
+          export CLANG_BIN=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+          # 编译参数：生成共享库、位置无关代码、精简体积、链接基础动态库
+          $CLANG_BIN -shared -fPIC -s -ldl strong_core.c -o libstrong_core.so
 
-      # 编译产物上传为Release附件
-      - name: Upload compiled SO artifact
+      - name: 上传编译成品SO作为持久化制品
         uses: actions/upload-artifact@v4
         with:
-          name: libstrong_core_arm64
+          name: libstrong_core-arm64-v8a
           path: libstrong_core.so
-          retention-days: 30
-
+          retention-days: 90
