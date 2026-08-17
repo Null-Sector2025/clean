@@ -1,0 +1,51 @@
+name: Build Standard Android SO (NDK r24)
+
+# 触发规则：仅 C、头文件、编译配置、工作流本身改动才执行；修改py文件完全跳过CI
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.c'
+      - '**.h'
+      - 'Makefile'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build_so.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.c'
+      - '**.h'
+      - 'Makefile'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build_so.yml'
+
+jobs:
+  compile_arm64_so:
+    runs-on: ubuntu-latest
+    steps:
+      # 拉取仓库全部源码
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # 配置 Android NDK r24 (稳定版本，适配 Android API24)
+      - name: Setup Android NDK r24
+        uses: android-actions/setup-ndk@v1
+        with:
+          ndk-version: r24
+
+      # 编译参数定义
+      - name: Compile libstrong_core.so (arm64-v8a)
+        run: |
+          # 编译器路径
+          CLANG=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+          # 编译生成标准Android共享库
+          $CLANG -shared -fPIC -s -ldl -Wall strong_core.c -o libstrong_core.so
+
+      # 编译产物上传为Release附件
+      - name: Upload compiled SO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libstrong_core_arm64
+          path: libstrong_core.so
+          retention-days: 30
+
